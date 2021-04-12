@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -21,6 +22,11 @@ public class Colocviu1_2MainActivity extends AppCompatActivity {
 
     private int lastComputedSum;
 
+    private IntentFilter intentFilter;
+    private MyBroadcastReceiver broadcastReceiver;
+
+    private boolean modifiedFlag;
+
     private final ButtonHandler buttonHandler = new ButtonHandler();
     private class ButtonHandler implements View.OnClickListener {
 
@@ -29,6 +35,7 @@ public class Colocviu1_2MainActivity extends AppCompatActivity {
             Button button = (Button) v;
 
             if (button.getId() == R.id.add) {
+                modifiedFlag = true;
 
                 if (inputText.getText().toString() == null || inputText.getText().toString().isEmpty()) {
                     return;
@@ -43,9 +50,16 @@ public class Colocviu1_2MainActivity extends AppCompatActivity {
                 outputText.setText(String.format("%s%s", outputText.getText().toString(), toAppend));
             }
             else if (button.getId() == R.id.compute) {
-                Intent intent = new Intent(v.getContext(), Colocviu1_2SecondaryActivity.class);
-                intent.putExtra(Constants.EXTRA_BUNDLE_KEY, outputText.getText().toString());
-                startActivityForResult(intent, Constants.SECONDARY_ACTIVITY_REQUEST_CODE);
+
+                if (modifiedFlag) {
+                    modifiedFlag = false;
+
+                    Intent intent = new Intent(v.getContext(), Colocviu1_2SecondaryActivity.class);
+                    intent.putExtra(Constants.EXTRA_BUNDLE_KEY, outputText.getText().toString());
+                    startActivityForResult(intent, Constants.SECONDARY_ACTIVITY_REQUEST_CODE);
+                } else {
+                    Toast.makeText(v.getContext(), "Nothing to compute. Result: " + lastComputedSum, Toast.LENGTH_LONG).show();
+                }
             }
         }
     }
@@ -55,6 +69,12 @@ public class Colocviu1_2MainActivity extends AppCompatActivity {
         Toast.makeText(this, "Received result: " + resultCode, Toast.LENGTH_LONG).show();
         lastComputedSum = resultCode;
 
+        if (lastComputedSum > 10) {
+            Intent intent = new Intent(this, Colocviu1_2Service.class);
+            intent.putExtra(Constants.SUM_SERVICE_KEY, lastComputedSum);
+            startService(intent);
+        }
+
         super.onActivityResult(requestCode, resultCode, data);
     }
 
@@ -62,6 +82,7 @@ public class Colocviu1_2MainActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
+        outState.putBoolean(Constants.EXTRA_BUNDLE_KEY_FLAG, modifiedFlag);
         outState.putInt(Constants.SAVE_INSTANCE_KEY, lastComputedSum);
     }
 
@@ -70,6 +91,7 @@ public class Colocviu1_2MainActivity extends AppCompatActivity {
         super.onRestoreInstanceState(savedInstanceState);
 
         lastComputedSum = savedInstanceState.getInt(Constants.SAVE_INSTANCE_KEY);
+        modifiedFlag = savedInstanceState.getBoolean(Constants.EXTRA_BUNDLE_KEY_FLAG);
         outputText.setText(Integer.toString(lastComputedSum));
     }
 
@@ -85,5 +107,31 @@ public class Colocviu1_2MainActivity extends AppCompatActivity {
         computeButton = findViewById(R.id.compute);
         addButton.setOnClickListener(buttonHandler);
         computeButton.setOnClickListener(buttonHandler);
+
+        // Manage broadcast receiver and intent filter (D)
+        broadcastReceiver = new MyBroadcastReceiver();
+
+        intentFilter = new IntentFilter();
+        intentFilter.addAction(Constants.ACTION);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(broadcastReceiver, intentFilter);
+    }
+
+    @Override
+    protected void onPause() {
+        unregisterReceiver(broadcastReceiver);
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Intent intent = new Intent(this, Colocviu1_2Service.class);
+        stopService(intent);
+
+        super.onDestroy();
     }
 }

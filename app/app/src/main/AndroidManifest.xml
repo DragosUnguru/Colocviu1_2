@@ -9,9 +9,20 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Colocviu1_2">
+        <receiver
+            android:name=".MyBroadcastReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <service
+            android:name=".Colocviu1_2Service"
+            android:enabled="true"
+            android:exported="false" />
+
         <activity android:name=".Colocviu1_2SecondaryActivity">
             <intent-filter>
                 <action android:name="android.intent.action.Colocviu1_2SecondaryActivity" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
