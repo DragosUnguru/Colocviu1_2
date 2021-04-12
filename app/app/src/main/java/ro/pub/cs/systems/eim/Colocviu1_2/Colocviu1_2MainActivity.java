@@ -1,5 +1,6 @@
 package ro.pub.cs.systems.eim.Colocviu1_2;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -17,6 +18,8 @@ public class Colocviu1_2MainActivity extends AppCompatActivity {
     private EditText inputText;
     private Button addButton;
     private Button computeButton;
+
+    private int lastComputedSum;
 
     private final ButtonHandler buttonHandler = new ButtonHandler();
     private class ButtonHandler implements View.OnClickListener {
@@ -50,7 +53,24 @@ public class Colocviu1_2MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         Toast.makeText(this, "Received result: " + resultCode, Toast.LENGTH_LONG).show();
+        lastComputedSum = resultCode;
+
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putInt(Constants.SAVE_INSTANCE_KEY, lastComputedSum);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+
+        lastComputedSum = savedInstanceState.getInt(Constants.SAVE_INSTANCE_KEY);
+        outputText.setText(Integer.toString(lastComputedSum));
     }
 
     @Override
